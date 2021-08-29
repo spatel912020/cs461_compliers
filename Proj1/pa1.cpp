@@ -9,6 +9,7 @@
 using namespace std;
 
 string getChildState(string currentState, vector<vector<string>> nfaTable, map<string, string> &dfaLookupTable, set<string> &visitedState);
+void cleanIntermediateDFA(vector<string> &intermidiateDFA);
 
 int main()
 {
@@ -102,11 +103,19 @@ int main()
                                 if (dfaLookupTableIterator != dfaLookupTable.end())
                                 {
                                     ss << dfaLookupTable.find(temp3)->second;
+                                    if (k + 1 < nfaTable[i][j].length())
+                                    {
+                                        ss << ",";
+                                    }
                                 }
                                 else
                                 {
                                     string tempchildStates = getChildState(temp3, nfaTable, dfaLookupTable, visitedStates);
                                     ss << tempchildStates;
+                                    if (k + 1 < nfaTable[i][j].length())
+                                    {
+                                        ss << ",";
+                                    }
                                     dfaLookupTable.insert(pair<string, string>(temp3, tempchildStates));
                                 }
                             }
@@ -132,8 +141,16 @@ int main()
                             {
                                 ss << dfaLookupTable.find(temp3)->first;
                                 ss << dfaLookupTable.find(temp3)->second;
+                                if (k + 1 < nfaTable[i][j].length())
+                                {
+                                    ss << ",";
+                                }
                                 string tempchildStates = getChildState(temp3, nfaTable, dfaLookupTable, visitedStates);
                                 ss << tempchildStates;
+                                if (k + 1 < nfaTable[i][j].length())
+                                {
+                                    ss << ",";
+                                }
                                 dfaLookupTable.insert(pair<string, string>(temp3, tempchildStates));
                             }
                             else
@@ -141,6 +158,10 @@ int main()
                                 ss << temp3;
                                 string tempchildStates = getChildState(temp3, nfaTable, dfaLookupTable, visitedStates);
                                 ss << tempchildStates;
+                                if (k + 1 < nfaTable[i][j].length())
+                                {
+                                    ss << ",";
+                                }
                                 dfaLookupTable.insert(pair<string, string>(temp3, tempchildStates));
                             }
                         }
@@ -152,26 +173,25 @@ int main()
                 //cout << temp_to_states << "-----------------------" << i + 1 << endl;
                 if (temp_to_states != "{}")
                 {
-                    cout << temp_to_states << endl;
                     intermidiateDFA.push_back(temp_to_states);
+                    //cout << "new DFA state: "<< "\t" << intermidiateDFA.size() << "    -->    " << temp_to_states << endl;
                 }
             }
         }
     }
-
-    /*
-    for (dfaLookupTableIterator = dfaLookupTable.begin(); dfaLookupTableIterator != dfaLookupTable.end(); dfaLookupTableIterator++)
+    cleanIntermediateDFA(intermidiateDFA);
+    /*for (dfaLookupTableIterator = dfaLookupTable.begin(); dfaLookupTableIterator != dfaLookupTable.end(); dfaLookupTableIterator++)
     {
         cout << dfaLookupTableIterator->first << " ====== " << dfaLookupTableIterator->second << endl;
     }
     */
+
     return 0;
 }
 
 string getChildState(string currentState, vector<vector<string>> nfaTable, map<string, string> &dfaLookupTable, set<string> &visitedStates)
 {
     stringstream ss;
-    ss << ",";
     string childStates;
     map<string, string>::iterator dfaLookupTableIterator;
     set<string>::iterator visitedStatesIterator;
@@ -182,6 +202,7 @@ string getChildState(string currentState, vector<vector<string>> nfaTable, map<s
     visitedStatesIterator = visitedStates.find(currentState);
     if (nfaTable[currentRow][currentCol] != "{}" && dfaLookupTableIterator == dfaLookupTable.end() && visitedStatesIterator == visitedStates.end())
     {
+        ss << ",";
         visitedStates.insert(currentState);
         for (int k = 0; k < nfaTable[currentRow][currentCol].length(); k++)
         {
@@ -204,6 +225,10 @@ string getChildState(string currentState, vector<vector<string>> nfaTable, map<s
                 {
                     //cout << "true";
                     ss << dfaLookupTable.find(temp3)->second;
+                    if (k + 1 < nfaTable[currentRow][currentCol].length())
+                    {
+                        ss << ",";
+                    }
                 }
                 else
                 {
@@ -212,6 +237,10 @@ string getChildState(string currentState, vector<vector<string>> nfaTable, map<s
                     //cout << "false" << endl;
                     string tempchildStates = getChildState(temp3, nfaTable, dfaLookupTable, visitedStates);
                     ss << tempchildStates;
+                    if (k + 1 < nfaTable[currentRow][currentCol].length())
+                    {
+                        ss << ",";
+                    }
                     dfaLookupTable.insert(pair<string, string>(temp3, tempchildStates));
                 }
             }
@@ -219,8 +248,44 @@ string getChildState(string currentState, vector<vector<string>> nfaTable, map<s
     }
     else
     {
-        return ",";
+        return "";
     }
     ss >> childStates;
     return childStates;
+}
+
+void cleanIntermediateDFA(vector<string> &intermidiateDFA)
+{
+    set<int> temp_set;
+    set<int>::iterator temp_set_iterator;
+    set<string> newIntermediateDFA;
+    set<string>::iterator newIntermediateDFAIterator;
+    for (int i = 0; i < intermidiateDFA.size(); i++)
+    {
+        for (int j = 0; j < intermidiateDFA[i].length(); j++)
+        {
+            if (intermidiateDFA[i][j] != '{' && intermidiateDFA[i][j] != '}')
+            {
+                stringstream current_state;
+                string state_string;
+                while (intermidiateDFA[i][j] != ',' && intermidiateDFA[i][j] != '}')
+                {
+                    current_state << intermidiateDFA[i][j];
+                    j++;
+                }
+                current_state >> state_string;
+                if (state_string != "," || state_string != "")
+                {
+                    //cout << state_string << endl;
+                    temp_set.insert(stoi(state_string));
+                }
+            }
+        }
+        for (temp_set_iterator = temp_set.begin(); temp_set_iterator != temp_set.end(); temp_set_iterator++)
+        {
+            cout << *temp_set_iterator << " ";
+        }
+        cout << endl;
+        temp_set.clear();
+    }
 }
