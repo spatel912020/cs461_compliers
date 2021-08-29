@@ -3,10 +3,12 @@
 #include <stdio.h>
 #include <vector>
 #include <sstream>
+#include <map>
+#include <set>
 
 using namespace std;
 
-string getChildState(string currentState, vector<vector<string>> nfaTable);
+string getChildState(string currentState, vector<vector<string>> nfaTable, map<string, string> &dfaLookupTable, set<string> &visitedState);
 
 int main()
 {
@@ -18,6 +20,10 @@ int main()
     vector<char> nfaInputs;
     vector<string> intermidiateDFA;
     vector<vector<string>> nfaTable;
+    set<string> visitedStates;
+    set<string>::iterator visitedStatesIterator;
+    map<string, string> dfaLookupTable;
+    map<string, string>::iterator dfaLookupTableIterator;
 
     //get initial state by parsing stdin
     scanf("%s %s %d\n", temp, temp2, &initialState);
@@ -68,11 +74,15 @@ int main()
         {
             if (nfaTable[i][j] != "{}")
             {
-                if (j == nfaTable[i].size() - 1)
+                stringstream ss;
+                string temp_to_states;
+                ss << "{";
+                //cout << i + 1 << endl;
+                dfaLookupTableIterator = dfaLookupTable.find(to_string(i + 1));
+                if (j == nfaTable[i].size() - 1 && dfaLookupTableIterator == dfaLookupTable.end())
                 {
-                    stringstream ss;
-                    string temp_to_states;
-                    ss << "{" << i + 1 << ",";
+                    ss << i + 1 << ",";
+                    visitedStates.insert(to_string(i + 1));
                     for (int k = 0; k < nfaTable[i][j].length(); k++)
                     {
                         if (nfaTable[i][j][k] != '{' && nfaTable[i][j][k] != '}')
@@ -88,31 +98,91 @@ int main()
                             {
                                 string temp3;
                                 current_ss >> temp3;
-                                //insert in map nextState: childStates;
-                                ss << getChildState(temp3, nfaTable);
+                                dfaLookupTableIterator = dfaLookupTable.find(temp3);
+                                if (dfaLookupTableIterator != dfaLookupTable.end())
+                                {
+                                    ss << dfaLookupTable.find(temp3)->second;
+                                }
+                                else
+                                {
+                                    string tempchildStates = getChildState(temp3, nfaTable, dfaLookupTable, visitedStates);
+                                    ss << tempchildStates;
+                                    dfaLookupTable.insert(pair<string, string>(temp3, tempchildStates));
+                                }
                             }
                         }
                     }
-                    ss << "}";
-                    ss >> temp_to_states;
+                }
+                else if (j != nfaTable[i].size() - 1)
+                {
+                    for (int k = 0; k < nfaTable[i][j].length(); k++)
+                    {
+                        if (nfaTable[i][j][k] != '{' && nfaTable[i][j][k] != '}')
+                        {
+                            stringstream current_ss;
+                            while (nfaTable[i][j][k] != ',' && nfaTable[i][j][k] != '}')
+                            {
+                                current_ss << nfaTable[i][j][k];
+                                k++;
+                            }
+                            string temp3;
+                            current_ss >> temp3;
+                            dfaLookupTableIterator = dfaLookupTable.find(temp3);
+                            if (dfaLookupTableIterator != dfaLookupTable.end())
+                            {
+                                ss << dfaLookupTable.find(temp3)->first;
+                                ss << dfaLookupTable.find(temp3)->second;
+                                string tempchildStates = getChildState(temp3, nfaTable, dfaLookupTable, visitedStates);
+                                ss << tempchildStates;
+                                dfaLookupTable.insert(pair<string, string>(temp3, tempchildStates));
+                            }
+                            else
+                            {
+                                ss << temp3;
+                                string tempchildStates = getChildState(temp3, nfaTable, dfaLookupTable, visitedStates);
+                                ss << tempchildStates;
+                                dfaLookupTable.insert(pair<string, string>(temp3, tempchildStates));
+                            }
+                        }
+                    }
+                }
+                ss << "}";
+                ss >> temp_to_states;
+                visitedStates.clear();
+                //cout << temp_to_states << "-----------------------" << i + 1 << endl;
+                if (temp_to_states != "{}")
+                {
                     cout << temp_to_states << endl;
+                    intermidiateDFA.push_back(temp_to_states);
                 }
             }
         }
     }
+
+    /*
+    for (dfaLookupTableIterator = dfaLookupTable.begin(); dfaLookupTableIterator != dfaLookupTable.end(); dfaLookupTableIterator++)
+    {
+        cout << dfaLookupTableIterator->first << " ====== " << dfaLookupTableIterator->second << endl;
+    }
+    */
     return 0;
 }
 
-string getChildState(string currentState, vector<vector<string>> nfaTable)
+string getChildState(string currentState, vector<vector<string>> nfaTable, map<string, string> &dfaLookupTable, set<string> &visitedStates)
 {
     stringstream ss;
     ss << ",";
     string childStates;
+    map<string, string>::iterator dfaLookupTableIterator;
+    set<string>::iterator visitedStatesIterator;
     int currentRow = stoi(currentState);
     currentRow -= 1;
     int currentCol = nfaTable[currentRow].size() - 1;
-    if (nfaTable[currentRow][currentCol] != "{}")
+    dfaLookupTableIterator = dfaLookupTable.find(currentState);
+    visitedStatesIterator = visitedStates.find(currentState);
+    if (nfaTable[currentRow][currentCol] != "{}" && dfaLookupTableIterator == dfaLookupTable.end() && visitedStatesIterator == visitedStates.end())
     {
+        visitedStates.insert(currentState);
         for (int k = 0; k < nfaTable[currentRow][currentCol].length(); k++)
         {
             if (nfaTable[currentRow][currentCol][k] != '{' && nfaTable[currentRow][currentCol][k] != '}')
@@ -127,9 +197,23 @@ string getChildState(string currentState, vector<vector<string>> nfaTable)
                 }
                 string temp3;
                 current_ss >> temp3;
-                cout << temp3 << "-----" << currentState << endl;
+                //cout << temp3 << "-----" << currentState << endl;
                 ss << temp3;
-                ss << getChildState(temp3, nfaTable);
+                dfaLookupTableIterator = dfaLookupTable.find(temp3);
+                if (dfaLookupTableIterator != dfaLookupTable.end())
+                {
+                    //cout << "true";
+                    ss << dfaLookupTable.find(temp3)->second;
+                }
+                else
+                {
+                    //insert in map nextState: childStates;
+                    //cout << "inserting " << temp3 << " into map with " << getChildState(temp3, nfaTable, dfaLookupTable, visitedStates) << endl;
+                    //cout << "false" << endl;
+                    string tempchildStates = getChildState(temp3, nfaTable, dfaLookupTable, visitedStates);
+                    ss << tempchildStates;
+                    dfaLookupTable.insert(pair<string, string>(temp3, tempchildStates));
+                }
             }
         }
     }
