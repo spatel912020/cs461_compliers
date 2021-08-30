@@ -9,19 +9,23 @@
 using namespace std;
 
 string getChildState(string currentState, vector<vector<string>> nfaTable, map<string, string> &dfaLookupTable, set<string> &visitedState);
-void cleanIntermediateDFA(vector<string> &intermidiateDFA);
+void cleanIntermediateDFA(vector<string> &intermidiateDFA, set<string> &finalDFAstates, set<string> &nfaFinalStates);
 
 int main()
 {
     char temp[10];
     char temp2[10];
     string nfaInputsLine;
-    char finalState[20];
+    char tempfinalState[20];
+    string finalState;
     int initialState, totalState, numPossibleNFAinputs = 0;
     vector<char> nfaInputs;
     vector<string> intermidiateDFA;
     vector<vector<string>> nfaTable;
     set<string> visitedStates;
+    set<string> finalDFAstates;
+    set<string>::iterator finalDFAstatesIterator;
+    set<string> nfaFinalStates;
     set<string>::iterator visitedStatesIterator;
     map<string, string> dfaLookupTable;
     map<string, string>::iterator dfaLookupTableIterator;
@@ -32,9 +36,25 @@ int main()
     strcat(temp, temp2);
 
     //get final states by parsing stdin
-    scanf("%s %s %s\n", temp, temp2, finalState);
+    scanf("%s %s %s\n", temp, temp2, tempfinalState);
     strcat(temp, " ");
     strcat(temp, temp2);
+    finalState = string(tempfinalState);
+    for (int i = 0; i < finalState.length(); i++)
+    {
+        string temp3;
+        if (finalState[i] != '{' && finalState[i] != '}')
+        {
+            stringstream current_ss;
+            while (finalState[i] != ',' && finalState[i] != '}')
+            {
+                current_ss << finalState[i];
+                i++;
+            }
+            current_ss >> temp3;
+            nfaFinalStates.insert(temp3);
+        }
+    }
 
     //get total states by parsing stdin
     scanf("%s %s %d\n", temp, temp2, &totalState);
@@ -177,9 +197,32 @@ int main()
                     //cout << "new DFA state: "<< "\t" << intermidiateDFA.size() << "    -->    " << temp_to_states << endl;
                 }
             }
+            else if (nfaTable[i][j] == "{}" && i == 0 && j == nfaTable[i].size() - 1)
+            {
+                intermidiateDFA.push_back("{1}");
+            }
         }
     }
-    cleanIntermediateDFA(intermidiateDFA);
+    cleanIntermediateDFA(intermidiateDFA, finalDFAstates, nfaFinalStates);
+    for (int i = 0; i < intermidiateDFA.size(); i++)
+    {
+        cout << "new DFA state:  " << i + 1 << "    -->  " << intermidiateDFA[i] << endl;
+    }
+    cout << "done." << endl;
+    cout << endl;
+    cout << "final DFA:" << endl;
+    cout << "Initial State:  " << initialState << endl;
+    cout << "Final States:  {";
+    for (finalDFAstatesIterator = finalDFAstates.begin(); finalDFAstatesIterator != finalDFAstates.end(); finalDFAstatesIterator++)
+    {
+        if (finalDFAstatesIterator != finalDFAstates.begin())
+        {
+            cout << ",";
+        }
+        cout << *finalDFAstatesIterator;
+    }
+    cout << "}" << endl;
+    cout << "Total State:  " << intermidiateDFA.size() << endl;
     /*for (dfaLookupTableIterator = dfaLookupTable.begin(); dfaLookupTableIterator != dfaLookupTable.end(); dfaLookupTableIterator++)
     {
         cout << dfaLookupTableIterator->first << " ====== " << dfaLookupTableIterator->second << endl;
@@ -254,16 +297,19 @@ string getChildState(string currentState, vector<vector<string>> nfaTable, map<s
     return childStates;
 }
 
-void cleanIntermediateDFA(vector<string> &intermidiateDFA)
+void cleanIntermediateDFA(vector<string> &intermidiateDFA, set<string> &finalDFAstates, set<string> &nfaFinalStates)
 {
     set<int> temp_set;
     set<int>::iterator temp_set_iterator;
     set<string> newIntermediateDFA;
+    set<string> newIntermediateDFAfinalState;
     set<string>::iterator newIntermediateDFAIterator;
+    string tempString;
     for (int i = 0; i < intermidiateDFA.size(); i++)
     {
         for (int j = 0; j < intermidiateDFA[i].length(); j++)
         {
+            //cout << "------------" << intermidiateDFA[i] << endl;
             if (intermidiateDFA[i][j] != '{' && intermidiateDFA[i][j] != '}')
             {
                 stringstream current_state;
@@ -274,18 +320,57 @@ void cleanIntermediateDFA(vector<string> &intermidiateDFA)
                     j++;
                 }
                 current_state >> state_string;
-                if (state_string != "," || state_string != "")
+                //cout << state_string.length() << endl;
+                if (state_string != "," && state_string.length() != 0)
                 {
                     //cout << state_string << endl;
                     temp_set.insert(stoi(state_string));
                 }
             }
         }
+        stringstream ss;
+        bool containFinalState = false;
         for (temp_set_iterator = temp_set.begin(); temp_set_iterator != temp_set.end(); temp_set_iterator++)
         {
-            cout << *temp_set_iterator << " ";
+            if (temp_set_iterator != temp_set.begin())
+            {
+                ss << ",";
+            }
+            if (nfaFinalStates.find(to_string(*temp_set_iterator)) != nfaFinalStates.end())
+            {
+                containFinalState = true;
+            }
+            ss << *temp_set_iterator;
         }
-        cout << endl;
+        ss >> tempString;
+        if (!containFinalState)
+        {
+            newIntermediateDFA.insert(tempString);
+        }
+        else
+        {
+            newIntermediateDFAfinalState.insert(tempString);
+        }
         temp_set.clear();
+    }
+    intermidiateDFA.clear();
+    stringstream finalIntermediateDFA;
+    for (newIntermediateDFAIterator = newIntermediateDFA.begin(); newIntermediateDFAIterator != newIntermediateDFA.end(); newIntermediateDFAIterator++)
+    {
+        string temp;
+        finalIntermediateDFA << "{" << *newIntermediateDFAIterator << "}";
+        finalIntermediateDFA >> temp;
+        intermidiateDFA.push_back(temp);
+        finalIntermediateDFA.clear();
+    }
+
+    for (newIntermediateDFAIterator = newIntermediateDFAfinalState.begin(); newIntermediateDFAIterator != newIntermediateDFAfinalState.end(); newIntermediateDFAIterator++)
+    {
+        string temp;
+        finalIntermediateDFA << "{" << *newIntermediateDFAIterator << "}";
+        finalIntermediateDFA >> temp;
+        intermidiateDFA.push_back(temp);
+        finalDFAstates.insert(to_string(intermidiateDFA.size()));
+        finalIntermediateDFA.clear();
     }
 }
