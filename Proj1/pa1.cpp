@@ -382,7 +382,8 @@ string getDFATranslation(vector<vector<string>> nfaTable, vector<string> intermi
 				//cout<<endl;
 				//cout<<intermidiateDFA[i] << "----"<<searchStatesVector[0]<<endl;
 				if(intermidiateDFA[k].find(searchStatesVector[0]) != -1){
-					ret_string = "{" + to_string(k+1);	
+					ret_string = "{" + to_string(k+1);
+					k= intermidiateDFA.size();
 				}
 			}
 			searchStates.clear();
