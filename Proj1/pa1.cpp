@@ -8,8 +8,9 @@
 
 using namespace std;
 
-string getChildState(string currentState, vector<vector<string>> nfaTable, map<string, string> &dfaLookupTable, set<string> &visitedState);
+string getChildState(string currentState, vector<vector<string>> nfaTable, set<string> &visitedState, set <string> &accounted_episolen_transition); 
 void cleanIntermediateDFA(vector<string> &intermidiateDFA, set<string> &finalDFAstates, set<string> &nfaFinalStates);
+string getDFATranslation(vector<vector<string>> nfaTable, vector<string> intermidiateDFA, int translation, string DFAstate);
 
 int main()
 {
@@ -27,9 +28,8 @@ int main()
     set<string>::iterator finalDFAstatesIterator;
     set<string> nfaFinalStates;
     set<string>::iterator visitedStatesIterator;
-    map<string, string> dfaLookupTable;
-    map<string, string>::iterator dfaLookupTableIterator;
-
+	set <string> accounted_episolen_transition; 
+	set <string>::iterator accounted_episolen_transition_iterator; 
     //get initial state by parsing stdin
     scanf("%s %s %d\n", temp, temp2, &initialState);
     strcat(temp, " ");
@@ -99,9 +99,11 @@ int main()
                 string temp_to_states;
                 ss << "{";
                 //cout << i + 1 << endl;
-                dfaLookupTableIterator = dfaLookupTable.find(to_string(i + 1));
-                if (j == nfaTable[i].size() - 1 && dfaLookupTableIterator == dfaLookupTable.end())
+				accounted_episolen_transition_iterator = accounted_episolen_transition.find(to_string(i+1));
+
+				if (j == nfaTable[i].size() - 1 && accounted_episolen_transition_iterator == accounted_episolen_transition.end())
                 {
+					accounted_episolen_transition.insert(to_string(i+1));
                     ss << i + 1 << ",";
                     visitedStates.insert(to_string(i + 1));
                     for (int k = 0; k < nfaTable[i][j].length(); k++)
@@ -119,25 +121,13 @@ int main()
                             {
                                 string temp3;
                                 current_ss >> temp3;
-                                dfaLookupTableIterator = dfaLookupTable.find(temp3);
-                                if (dfaLookupTableIterator != dfaLookupTable.end())
-                                {
-                                    ss << dfaLookupTable.find(temp3)->second;
-                                    if (k + 1 < nfaTable[i][j].length())
-                                    {
-                                        ss << ",";
-                                    }
-                                }
-                                else
-                                {
-                                    string tempchildStates = getChildState(temp3, nfaTable, dfaLookupTable, visitedStates);
-                                    ss << tempchildStates;
-                                    if (k + 1 < nfaTable[i][j].length())
-                                    {
-                                        ss << ",";
-                                    }
-                                    dfaLookupTable.insert(pair<string, string>(temp3, tempchildStates));
-                                }
+
+								string tempchildStates = getChildState(temp3, nfaTable, visitedStates, accounted_episolen_transition);
+								ss << tempchildStates;
+								if (k + 1 < nfaTable[i][j].length())
+								{
+									ss << ",";
+								}
                             }
                         }
                     }
@@ -156,37 +146,18 @@ int main()
                             }
                             string temp3;
                             current_ss >> temp3;
-                            dfaLookupTableIterator = dfaLookupTable.find(temp3);
-                            if (dfaLookupTableIterator != dfaLookupTable.end())
-                            {
-                                ss << dfaLookupTable.find(temp3)->first;
-                                ss << dfaLookupTable.find(temp3)->second;
-                                if (k + 1 < nfaTable[i][j].length())
-                                {
-                                    ss << ",";
-                                }
-                                string tempchildStates = getChildState(temp3, nfaTable, dfaLookupTable, visitedStates);
-                                ss << tempchildStates;
-                                if (k + 1 < nfaTable[i][j].length())
-                                {
-                                    ss << ",";
-                                }
-                                dfaLookupTable.insert(pair<string, string>(temp3, tempchildStates));
-                            }
-                            else
-                            {
-                                ss << temp3;
-                                string tempchildStates = getChildState(temp3, nfaTable, dfaLookupTable, visitedStates);
-                                ss << tempchildStates;
-                                if (k + 1 < nfaTable[i][j].length())
-                                {
-                                    ss << ",";
-                                }
-                                dfaLookupTable.insert(pair<string, string>(temp3, tempchildStates));
-                            }
+							accounted_episolen_transition.insert(temp3);
+							ss << temp3;
+							string tempchildStates = getChildState(temp3, nfaTable, visitedStates, accounted_episolen_transition);
+							ss << tempchildStates;
+							if (k + 1 < nfaTable[i][j].length())
+							{
+								ss << ",";
+							}
                         }
                     }
                 }
+
                 ss << "}";
                 ss >> temp_to_states;
                 visitedStates.clear();
@@ -230,6 +201,11 @@ int main()
     for (int i = 0; i < intermidiateDFA.size(); i++)
     {
         cout << i + 1 << "\t";
+		for(int j= 0; j < nfaInputs.size()-1; j++) {
+				cout<<getDFATranslation(nfaTable, intermidiateDFA, j, intermidiateDFA[i])<<"\t";
+				//cout<<j;
+				//getDFATranslation(nfaTable, intermidiateDFA, j, intermidiateDFA[i]);
+		}
         cout << endl;
     }
     /*for (dfaLookupTableIterator = dfaLookupTable.begin(); dfaLookupTableIterator != dfaLookupTable.end(); dfaLookupTableIterator++)
@@ -240,18 +216,16 @@ int main()
     return 0;
 }
 
-string getChildState(string currentState, vector<vector<string>> nfaTable, map<string, string> &dfaLookupTable, set<string> &visitedStates)
+string getChildState(string currentState, vector <vector<string>> nfaTable, set<string> &visitedStates, set <string> &accounted_episolen_transition)
 {
     stringstream ss;
     string childStates;
-    map<string, string>::iterator dfaLookupTableIterator;
     set<string>::iterator visitedStatesIterator;
     int currentRow = stoi(currentState);
     currentRow -= 1;
     int currentCol = nfaTable[currentRow].size() - 1;
-    dfaLookupTableIterator = dfaLookupTable.find(currentState);
     visitedStatesIterator = visitedStates.find(currentState);
-    if (nfaTable[currentRow][currentCol] != "{}" && dfaLookupTableIterator == dfaLookupTable.end() && visitedStatesIterator == visitedStates.end())
+    if (nfaTable[currentRow][currentCol] != "{}" && visitedStatesIterator == visitedStates.end())
     {
         ss << ",";
         visitedStates.insert(currentState);
@@ -267,32 +241,21 @@ string getChildState(string currentState, vector<vector<string>> nfaTable, map<s
                 }
                 string temp3;
                 current_ss >> temp3;
+				accounted_episolen_transition.insert(temp3);
                 ss << temp3;
-                dfaLookupTableIterator = dfaLookupTable.find(temp3);
-                if (dfaLookupTableIterator != dfaLookupTable.end())
-                {
-                    ss << dfaLookupTable.find(temp3)->second;
-                    if (k + 1 < nfaTable[currentRow][currentCol].length())
-                    {
-                        ss << ",";
-                    }
-                }
-                else
-                {
-                    //insert in map nextState: childStates;
-                    string tempchildStates = getChildState(temp3, nfaTable, dfaLookupTable, visitedStates);
-                    ss << tempchildStates;
-                    if (k + 1 < nfaTable[currentRow][currentCol].length())
-                    {
-                        ss << ",";
-                    }
-                    dfaLookupTable.insert(pair<string, string>(temp3, tempchildStates));
-                }
-            }
+				//insert in map nextState: childStates;
+				string tempchildStates = getChildState(temp3, nfaTable,  visitedStates, accounted_episolen_transition);
+				ss << tempchildStates;
+				if (k + 1 < nfaTable[currentRow][currentCol].length())
+				{
+					ss << ",";
+				}
+			}
         }
     }
     else
     {
+		accounted_episolen_transition.insert(currentState);
         return "";
     }
     ss >> childStates;
@@ -324,7 +287,6 @@ void cleanIntermediateDFA(vector<string> &intermidiateDFA, set<string> &finalDFA
                 //cout << state_string.length() << endl;
                 if (state_string != "," && state_string.length() != 0)
                 {
-                    //cout << state_string << endl;
                     temp_set.insert(stoi(state_string));
                 }
             }
@@ -374,4 +336,60 @@ void cleanIntermediateDFA(vector<string> &intermidiateDFA, set<string> &finalDFA
         finalDFAstates.insert(to_string(intermidiateDFA.size()));
         finalIntermediateDFA.clear();
     }
+}
+
+string getDFATranslation(vector<vector<string>> nfaTable, vector<string> intermidiateDFA, int translation, string DFAstate){
+
+	string DFAStateTransition;
+	string ret_string = "{";
+	//cout<<"------------"<<DFAstate<<endl;
+	vector <int> NFA_states_to_check; 
+	for(int i = 0; i < DFAstate.length(); i++){
+		if(DFAstate[i] != '{' && DFAstate[i] != '}'){	
+			stringstream current_state;
+			string state_string;
+			int row;
+			while (DFAstate[i] != ',' && DFAstate[i] != '}')
+			{
+				current_state << DFAstate[i];
+				i++;
+			}
+			current_state >> state_string;
+			row = stoi(state_string);
+			row -= 1;
+			NFA_states_to_check.push_back(row);
+		}
+	}
+	for(int i =0; i < NFA_states_to_check.size(); i++){
+		if(nfaTable[NFA_states_to_check[i]][translation] != "{}"){
+			string searchStates = nfaTable[NFA_states_to_check[i]][translation];
+			vector <string> searchStatesVector;
+			bool stateContained = false;
+			for(int j = 0; j < searchStates.length(); j++){
+				if(searchStates[j] != '{' && searchStates[j] != '}'){	
+					stringstream current_state;
+					string state_string;
+					while (searchStates[j] != ',' && searchStates[j] != '}')
+					{
+						current_state << searchStates[j];
+						j++;
+					}
+					current_state >> state_string;
+					searchStatesVector.push_back(state_string);
+				}
+			}
+			for(int k =0; k < intermidiateDFA.size(); k++){
+				//cout<<endl;
+				//cout<<intermidiateDFA[i] << "----"<<searchStatesVector[0]<<endl;
+				if(intermidiateDFA[k].find(searchStatesVector[0]) != -1){
+					ret_string = "{" + to_string(k+1);	
+				}
+			}
+			searchStates.clear();
+
+		}
+	}
+	ret_string += "}";
+	return ret_string;
+
 }
