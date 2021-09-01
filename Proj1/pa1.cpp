@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <map>
+#include <algorithm>    // std::includes, std::sort
 #include <set>
 
 using namespace std;
@@ -161,7 +162,6 @@ int main()
                         }
                     }
                 }
-
                 ss << "}";
                 //add new state string to new DFA state vector
 				ss >> temp_to_states;
@@ -273,6 +273,8 @@ void cleanIntermediateDFA(vector<string> &intermidiateDFA, set<string> &finalDFA
     set<int> temp_set;
     set<int>::iterator temp_set_iterator;
     set<string> newIntermediateDFA;
+	vector <set <int> > all_sets;
+	vector <set <int> >::iterator all_sets_iterator;
     set<string> newIntermediateDFAfinalState;
     set<string>::iterator newIntermediateDFAIterator;
     string tempString;
@@ -315,18 +317,23 @@ void cleanIntermediateDFA(vector<string> &intermidiateDFA, set<string> &finalDFA
         ss >> tempString;
         if (!containFinalState)
         {
+		//	cout<<"reg == "<<tempString<<endl;
             newIntermediateDFA.insert(tempString);
         }
         else
         {
+		//	cout<<"final == "<<tempString<<endl;
             newIntermediateDFAfinalState.insert(tempString);
         }
+		//cout<<"rejected == "<<tempString<<endl;
+		all_sets.push_back(temp_set);
         temp_set.clear();
     }
 	//delete old DFA vector and add cleaned DFA vector;
     intermidiateDFA.clear();
     stringstream finalIntermediateDFA;
-    for (newIntermediateDFAIterator = newIntermediateDFA.begin(); newIntermediateDFAIterator != newIntermediateDFA.end(); newIntermediateDFAIterator++)
+	
+	for (newIntermediateDFAIterator = newIntermediateDFA.begin(); newIntermediateDFAIterator != newIntermediateDFA.end(); newIntermediateDFAIterator++)
     {
         string temp;
         finalIntermediateDFA << "{" << *newIntermediateDFAIterator << "}";
