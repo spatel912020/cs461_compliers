@@ -1,24 +1,13 @@
 %{
 #include "y.tab.h"
+int c;
+
 %}
 %%
-[0-9]+		{sscanf(yytext, "%d", &yylval.num); return NUM; }
-[a-z]		{sscanf(yytext, "%c", &yylval.id); return VARIABLE; }
-"("			{return OPEN_PARENTHESES;}
-")"			{return CLOSE_PARENTHESES;}
-"~"			{return BITWISE_NOT;}
-"*"			{return MULTIPLICATION;}
-"/"			{return DIVISION;}
-"%"			{return REMAINDER;}
-"+"			{return ADD;}
-"-"			{return SUBTRACTION;}
-"<<"		{return LEFT_SHIFT;}
-">>"		{return RIGHT_SHIFT;}
-"&"			{return BITWISE_AND;}
-"^"			{return BITWISE_XOR;}
-"|"			{return BITWISE_OR;}
-"="			{return ASSIGNMENT;}
-";"			{return SEMICOLON;}
+[0-9]+		{sscanf(yytext, "%d", &yylval.a); return NUM; }
+[a-z]		{c = yytext[0]; yylval.a = c- 'a'; return VARIABLE; }
 [ \t\n]		{;}
-.			{return yytext[0]; }
+[^0-9a-z\b]	{return(yytext[0]);}
+.			{printf("Unrecognized token\n;"); return -1;}
 %%
+

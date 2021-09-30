@@ -4,58 +4,61 @@
 
 %{
 #include <stdio.h>
+
+int regs[26];
+
 %}
 
-%union {
-  int num;
-  char id;
-}
+%start commands
 
-%token <num> NUM
-%token <id> VARIABLE
-%token OPEN_PARENTHESES
-%token CLOSE_PARENTHESES
-%token BITWISE_NOT
-%token MULTIPLICATION
-%token DIVISION
-%token REMAINDER
-%token ADD
-%token SUBTRACTION
-%token LEFT_SHIFT
-%token RIGHT_SHIFT
-%token BITWISE_AND
-%token BITWISE_XOR
-%token BITWISE_OR
-%token ASSIGNMENT
-%token SEMICOLON
-%type <num> expr
+%union {
+	int a;
+}
+%token NUM
+%token VARIABLE
+%type expr
+%left '|' '&' '+' '-' '*' '/' '%'
 
 %%
 commands:
-	|	commands command
+	|	command ';'
+	|	commands command ';'
 	;
 
-command	:	expr ';'      { printf("%d\n", $1); }
+command	:	expr { printf("%d\n", $1); }
+	|	VARIABLE '=' expr { regs[$1.a] = $3.a; }
 	;
 
-expr	:	expr '+' NUM    { $$ = $1 + $3; }
-	|   expr '-' NUM    { $$ = $1 - $3; }
-	|   expr '+' VARIABLE { $$ = $1 + $3; }
-	|   expr '-' VARIABLE { $$ = $1 - $3; }
+expr	:	expr '+' NUM    { $$.a = $1.a + $3.a; }
+	|   expr '-' NUM    { $$.a = $1.a - $3.a; }
+	|   expr '*' NUM    { $$.a = $1.a * $3.a; }
+	|   expr '/' NUM    { $$.a = $1.a / $3.a; }
+	|   expr '%' NUM    { $$.a = $1.a % $3.a; }
+	|   expr '<<' NUM    { $$.a = $1.a << $3.a; }
+	|   expr '>>' NUM    { $$.a = $1.a >> $3.a; }
+	|   expr '&' NUM    { $$.a = $1.a & $3.a; }
+	|   expr '^' NUM    { $$.a = $1.a ^ $3.a; }
+	|   expr '|' NUM    { $$.a = $1.a | $3.a; }
+	|   expr '+=' NUM    { $$.a = $1.a += $3.a; }
+	|   expr '-=' NUM    { $$.a = $1.a -= $3.a; }
+	|   expr '*=' NUM    { $$.a = $1.a *= $3.a; }
+	|   expr '/=' NUM    { $$.a = $1.a /= $3.a; }
+	|   expr '%=' NUM    { $$.a = $1.a %= $3.a; }
 	|	NUM                 { $$ = $1; }
+	|   VARIABLE			{ $$.a = regs[$1.a]; }
 	;
 
 %%
 
-int main()
+main()
 {
    if (yyparse())
-      printf("\nInvalid expression.\n");
+   printf("\nInvalid expression.\n");
    else
-      printf("\nCalculator off.\n");
+   printf("\nCalculator off.\n");
 }
 
-int yyerror(s)
+yyerror(s)
 char *s;
 {
    fprintf(stderr, "%s\n", s);
