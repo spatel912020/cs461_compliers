@@ -1,0 +1,29 @@
+#define NUM 257
+#define VARIABLE 258
+#define OPEN_PARENTHESES 259
+#define CLOSE_PARENTHESES 260
+#define BITWISE_NOT 261
+#define MULTIPLICATION 262
+#define DIVISION 263
+#define REMAINDER 264
+#define ADD 265
+#define SUBTRACTION 266
+#define LEFT_SHIFT 267
+#define RIGHT_SHIFT 268
+#define BITWISE_AND 269
+#define BITWISE_XOR 270
+#define BITWISE_OR 271
+#define ASSIGNMENT 272
+#define SEMICOLON 273
+#ifdef YYSTYPE
+#undef  YYSTYPE_IS_DECLARED
+#define YYSTYPE_IS_DECLARED 1
+#endif
+#ifndef YYSTYPE_IS_DECLARED
+#define YYSTYPE_IS_DECLARED 1
+typedef union {
+  int num;
+  char id;
+} YYSTYPE;
+#endif /* !YYSTYPE_IS_DECLARED */
+extern YYSTYPE yylval;
