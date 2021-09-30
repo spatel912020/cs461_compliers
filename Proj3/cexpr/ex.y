@@ -28,7 +28,7 @@ expr	:	expr '+' NUM    { $$ = $1 + $3; }
 
 %%
 
-main()
+int main()
 {
    if (yyparse())
       printf("\nInvalid expression.\n");
@@ -36,7 +36,7 @@ main()
       printf("\nCalculator off.\n");
 }
 
-yyerror(s)
+int yyerror(s)
 char *s;
 {
    fprintf(stderr, "%s\n", s);
