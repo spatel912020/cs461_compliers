@@ -22,7 +22,6 @@
 #define YYSTYPE_IS_DECLARED 1
 typedef union {
 	long a;
-	int err;
 } YYSTYPE;
 #endif /* !YYSTYPE_IS_DECLARED */
 extern YYSTYPE yylval;

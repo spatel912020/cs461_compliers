@@ -5,14 +5,13 @@
 %{
 #include <stdio.h>
 int regs[26];
-
+int err;
 %}
 
 %start commands
 
 %union {
 	long a;
-	int err;
 }
 %token NUM
 %token VARIABLE
@@ -31,12 +30,13 @@ int regs[26];
 %token XOR_EQUAL
 %token OR_EQUAL
 %type expr
-%left '|' '&' '+' '-' '*' '/' '%' '<<'
+%left '+' '-' 
+%left '*' '/' '%'
 
 %%
 commands:
-	|	command ';' {$$.err = 0;}
-	|	commands command ';' {$$.err = 0;}
+	|	command ';' {err = 0;}
+	|	commands command ';' {err = 0;}
 	| DUMP ';' {
 				for(int i = 0; i < 26; i++){
 					printf("%c = %d\n", i+'a', regs[i]);
@@ -49,13 +49,13 @@ commands:
 				}
 	;
 
-command	:	expr { if($$.err == 1){} else{printf("%d\n", $$);};}
+command	:	expr { if(err == 1){} else{printf("%d\n", $$);};}
 	;
 
 expr	:	expr '+' expr    { 
 								if( ($1.a + $3.a) > 2147483647){
 									fprintf(stderr, "overflow\n");
-									$$.err = 1;
+									err = 1;
 								}
 								else{
 									$$.a = $1.a + $3.a;
@@ -65,7 +65,7 @@ expr	:	expr '+' expr    {
 	|   expr '-' expr    {	
 							if( ($1.a + $3.a) > 2147483647){
 								fprintf(stderr, "overflow\n");
-								$$.err = 1;
+								err = 1;
 							}
 							else{
 								$$.a = $1.a - $3.a;
@@ -75,7 +75,7 @@ expr	:	expr '+' expr    {
 	|   expr '*' expr    {
 							if( ($1.a * $3.a) > 2147483647){
 								fprintf(stderr, "overflow\n");
-								$$.err = 1;
+								err = 1;
 							}
 							else{
 								$$.a = $1.a * $3.a;
@@ -85,11 +85,11 @@ expr	:	expr '+' expr    {
 	|   expr '/' expr    { 
 							if($3.a == 0){ 
 								printf("dividebyzero\n");
-								$$.err = 1;
+								err = 1;
 							}
 							else if($1.a / $3.a > 2147483647){
 								fprintf(stderr, "overflow\n");
-								$$.err = 1;	
+								err = 1;	
 							}
 							else{
 								$$.a = $1.a / $3.a;
@@ -101,11 +101,11 @@ expr	:	expr '+' expr    {
 	|	'-' expr		 { $$.a = - $2.a; }
 	|   '~' expr		 { $$.a = ~$2.a; }
 	|   expr LEFT_SHIFT expr    { $$.a = $1.a << $3.a;}
-	|   expr RIGHT_SHIFT expr    { $$.a = $1.a >> $3.a;  printf("%d\n", $$); }
-	|   expr '&' expr    { $$.a = $1.a & $3.a;  printf("%d\n", $$); }
-	|   expr '^' expr    { $$.a = $1.a ^ $3.a; printf("%d\n", $$);  }
-	|   expr '|' expr    { $$.a = $1.a | $3.a; printf("%d\n", $$);  }
-	|	VARIABLE '=' expr { regs[$1.a] = $3.a; $$.a = regs[$1.a]; }
+	|   expr RIGHT_SHIFT expr    { $$.a = $1.a >> $3.a;}
+	|   expr '&' expr    { $$.a = $1.a & $3.a;}
+	|   expr '^' expr    { $$.a = $1.a ^ $3.a;}
+	|   expr '|' expr    { $$.a = $1.a | $3.a;}
+	|	VARIABLE '=' expr { regs[$1.a] = $3.a; $$.a = regs[$1.a];}
 	|   VARIABLE PLUS_EQUAL expr { regs[$1.a] += $3.a; $$.a = regs[$1.a];}
 	|   VARIABLE MINUS_EQUAL expr    { regs[$1.a] -= $3.a; $$.a = regs[$1.a];}
 	|   VARIABLE MUL_EQUAL expr    { regs[$1.a] *= $3.a; $$.a = regs[$1.a];}
